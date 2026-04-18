@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightProfit Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #0a0e1a;
+            --navy-light: #1a1f3a;
+            --navy-lighter: #252d47;
+            --purple: #7c3aed;
+            --purple-light: #8b5cf6;
+            --gold: #f59e0b;
+            --green: #10b981;
+            --red: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #334155;
+            --gradient-purple: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        body {
+            background: var(--navy);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--navy-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--purple);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--purple-light);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 2rem;
+            sticky: top;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .logo-text strong {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+        }
+
+        .logo-text small {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--green);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--green);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .date-time {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            text-align: right;
+        }
+
+        .date-time strong {
+            color: var(--text-primary);
+        }
+
+        /* KPI Row */
+        .kpi-row {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--purple);
+            transform: translateY(-2px);
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-card.accent .kpi-value {
+            background: var(--gradient-gold);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .kpi-subtext {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+
+        /* Tabs */
+        .view-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            position: relative;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1rem;
+            padding-bottom: 1.75rem;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-button.active {
+            color: var(--purple);
+            border-bottom-color: var(--purple);
+        }
+
+        /* View sections */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Project Grid */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .project-card {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-purple);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .project-card:hover {
+            border-color: var(--purple);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(124, 58, 237, 0.15);
+        }
+
+        .project-card:hover::before {
+            opacity: 1;
+        }
+
+        .project-card.funded-first { --accent: #06b6d4; }
+        .project-card.elite-writer { --accent: #f97316; }
+        .project-card.vidrevamp { --accent: #ec4899; }
+        .project-card.youtube-analytics { --accent: #ef4444; }
+        .project-card.pilot-mastery { --accent: #3b82f6; }
+        .project-card.family-gift { --accent: #d946ef; }
+        .project-card.behind-paywall { --accent: #84cc16; }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .project-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .project-status-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+        }
+
+        .status-building {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--gold);
+        }
+
+        .status-planning {
+            background: rgba(124, 58, 237, 0.15);
+            color: var(--purple-light);
+        }
+
+        /* Progress bar */
+        .progress-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pipeline-progress {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .stage-dot {
+            height: 8px;
+            flex: 1;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .stage-dot.complete {
+            background: var(--green);
+        }
+
+        .stage-dot.in-progress {
+            background: var(--gold);
+            animation: pulse-bar 2s infinite;
+        }
+
+        @keyframes pulse-bar {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .stage-dot:hover::after {
+            content: attr(data-stage);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--navy-lighter);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-link {
+            flex: 1;
+            padding: 0.6rem;
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 6px;
+            color: var(--purple-light);
+            text-align: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .action-link:hover {
+            background: var(--purple);
+            color: white;
+        }
+
+        .next-action {
+            padding: 0.75rem;
+            background: rgba(245, 158, 11, 0.05);
+            border-left: 3px solid var(--gold);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Pipeline Kanban */
+        .kanban-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .kanban-column {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+
+        .kanban-header {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stage-count {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            background: var(--purple);
+            border-radius: 12px;
+            color: white;
+        }
+
+        .kanban-item {
+            background: var(--navy);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+
+        .kanban-item:active {
+            cursor: grabbing;
+        }
+
+        .kanban-item:hover {
+            border-color: var(--purple);
+        }
+
+        .kanban-item-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .kanban-item-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Calendar Preview */
+        .calendar-section {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .calendar-day {
+            background: var(--navy);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 120px;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            border-color: var(--purple);
+        }
+
+        .day-name {
+            font-weight: 700;
+            color: var(--purple);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .day-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .day-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .content-item {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.6rem;
+            background: rgba(124, 58, 237, 0.15);
+            border-left: 2px solid var(--purple);
+            border-radius: 3px;
+            color: var(--text-secondary);
+        }
+
+        /* Tools Section */
+        .tools-section {
+            background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .tool-badge {
+            background: var(--navy);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .tool-badge:hover {
+            border-color: var(--green);
+        }
+
+        .tool-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tool-status {
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        .status-dot.offline {
+            background: var(--red);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .btn {
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-purple);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--purple);
+            color: var(--purple-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--purple);
+            color: white;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--navy-light);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .projects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+
+            .kanban-container {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kanban-container {
+                grid-template-columns: 1fr;
+            }
+
+            .calendar-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+
+            .kpi-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 0 1rem 3rem;
+            }
+
+            .header-content {
+                padding: 1rem;
+            }
+
+            .kpi-row {
+                padding: 0 1rem;
+                grid-template-columns: 1fr;
+            }
+
+            .view-tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-button {
+                white-space: nowrap;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .project-card {
+            animation: slideIn 0.4s ease;
+        }
+
+        .project-card:nth-child(2) { animation-delay: 0.1s; }
+        .project-card:nth-child(3) { animation-delay: 0.2s; }
+        .project-card:nth-child(4) { animation-delay: 0.3s; }
+        .project-card:nth-child(5) { animation-delay: 0.4s; }
+        .project-card:nth-child(6) { animation-delay: 0.5s; }
+        .project-card:nth-child(7) { animation-delay: 0.6s; }
+        .project-card:nth-child(8) { animation-delay: 0.7s; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo">⚡</div>
+                <div class="logo-text">
+                    <strong>Mission Control</strong>
+                    <small>InsightProfit Command Hub</small>
+                </div>
+            </div>
+            <div class="live-indicator">
+                <div class="pulse"></div>
+                <span>Live & Operational</span>
+            </div>
+            <div class="header-right">
+                <div class="date-time">
+                    <strong id="current-date">April 13, 2026</strong>
+                    <small id="current-time">12:00 PM</small>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- KPI Row -->
+    <section class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Projects</div>
+            <div class="kpi-value">8</div>
+            <div class="kpi-subtext">Across all brands</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Active Projects</div>
+            <div class="kpi-value">3</div>
+            <div class="kpi-subtext">In production</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">In Pipeline</div>
+            <div class="kpi-value">5</div>
+            <div class="kpi-subtext">Building/Planning</div>
+        </div>
+        <div class="kpi-card accent">
+            <div class="kpi-label">KB Pages</div>
+            <div class="kpi-value">1.1K</div>
+            <div class="kpi-subtext">Knowledge base</div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- View Tabs -->
+        <div class="view-tabs">
+            <button class="tab-button active" data-view="projects">Projects Grid</button>
+            <button class="tab-button" data-view="pipeline">Pipeline Kanban</button>
+            <button class="tab-button" data-view="calendar">Content Calendar</button>
+            <button class="tab-button" data-view="tools">Tools & Status</button>
+        </div>
+
+        <!-- Projects Grid View -->
+        <div id="projects" class="view active">
+            <div class="projects-grid">
+                <!-- PopeBot / InsightProfit -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-title">🤖 PopeBot</div>
+                        <div class="project-status-badge status-active">Active</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>6/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot complete" data-stage="Branding"></div>
+                        <div class="stage-dot complete" data-stage="GTM"></div>
+                        <div class="stage-dot in-progress" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live/insightprofit-popebot/" class="action-link">📚 KB</a>
+                        <a href="https://thepopebot-production-e881.up.railway.app" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Finalize monetization strategy & GHL integration
+                    </div>
+                </div>
+
+                <!-- Funded First -->
+                <div class="project-card funded-first">
+                    <div class="project-header">
+                        <div class="project-title">💰 Funded First</div>
+                        <div class="project-status-badge status-planning">Planning</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>2/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot" data-stage="Branding"></div>
+                        <div class="stage-dot" data-stage="GTM"></div>
+                        <div class="stage-dot" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Define branding & messaging framework
+                    </div>
+                </div>
+
+                <!-- Elite Writer -->
+                <div class="project-card elite-writer">
+                    <div class="project-header">
+                        <div class="project-title">✍️ Elite Writer</div>
+                        <div class="project-status-badge status-building">Building</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>4/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot complete" data-stage="Branding"></div>
+                        <div class="stage-dot complete" data-stage="GTM"></div>
+                        <div class="stage-dot in-progress" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Build MVP features & setup GHL funnel
+                    </div>
+                </div>
+
+                <!-- VidRevamp -->
+                <div class="project-card vidrevamp">
+                    <div class="project-header">
+                        <div class="project-title">🎬 VidRevamp</div>
+                        <div class="project-status-badge status-planning">Planning</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>1/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot" data-stage="Avatar"></div>
+                        <div class="stage-dot" data-stage="Branding"></div>
+                        <div class="stage-dot" data-stage="GTM"></div>
+                        <div class="stage-dot" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Research video intelligence market
+                    </div>
+                </div>
+
+                <!-- YouTube Playlist Analytics -->
+                <div class="project-card youtube-analytics">
+                    <div class="project-header">
+                        <div class="project-title">▶️ YouTube Analytics</div>
+                        <div class="project-status-badge status-building">Building</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>5/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot complete" data-stage="Branding"></div>
+                        <div class="stage-dot complete" data-stage="GTM"></div>
+                        <div class="stage-dot complete" data-stage="Monetization"></div>
+                        <div class="stage-dot in-progress" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Launch content calendar & email sequences
+                    </div>
+                </div>
+
+                <!-- Pilot Mastery Academy -->
+                <div class="project-card pilot-mastery">
+                    <div class="project-header">
+                        <div class="project-title">✈️ Pilot Mastery</div>
+                        <div class="project-status-badge status-planning">Planning</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>2/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot" data-stage="Branding"></div>
+                        <div class="stage-dot" data-stage="GTM"></div>
+                        <div class="stage-dot" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Develop flight training curriculum outline
+                    </div>
+                </div>
+
+                <!-- Family Gift Studio -->
+                <div class="project-card family-gift">
+                    <div class="project-header">
+                        <div class="project-title">🎁 Family Gift Studio</div>
+                        <div class="project-status-badge status-planning">Planning</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>1/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot" data-stage="Avatar"></div>
+                        <div class="stage-dot" data-stage="Branding"></div>
+                        <div class="stage-dot" data-stage="GTM"></div>
+                        <div class="stage-dot" data-stage="Monetization"></div>
+                        <div class="stage-dot" data-stage="Content"></div>
+                        <div class="stage-dot" data-stage="AI Opt"></div>
+                        <div class="stage-dot" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Define gift product categories & suppliers
+                    </div>
+                </div>
+
+                <!-- Behind Paywall -->
+                <div class="project-card behind-paywall">
+                    <div class="project-header">
+                        <div class="project-title">🔐 Behind Paywall</div>
+                        <div class="project-status-badge status-active">Active</div>
+                    </div>
+                    <div class="progress-label">
+                        <span>Pipeline Progress</span>
+                        <span>7/9 Complete</span>
+                    </div>
+                    <div class="pipeline-progress">
+                        <div class="stage-dot complete" data-stage="PRD"></div>
+                        <div class="stage-dot complete" data-stage="Avatar"></div>
+                        <div class="stage-dot complete" data-stage="Branding"></div>
+                        <div class="stage-dot complete" data-stage="GTM"></div>
+                        <div class="stage-dot complete" data-stage="Monetization"></div>
+                        <div class="stage-dot complete" data-stage="Content"></div>
+                        <div class="stage-dot complete" data-stage="AI Opt"></div>
+                        <div class="stage-dot in-progress" data-stage="CRO"></div>
+                        <div class="stage-dot" data-stage="E-com"></div>
+                    </div>
+                    <div class="project-actions">
+                        <a href="https://kb.insightprofit.live" class="action-link">📚 KB</a>
+                        <a href="#" class="action-link">🚀 Build</a>
+                        <a href="#" class="action-link">📧 GHL</a>
+                    </div>
+                    <div class="next-action">
+                        <strong>Next:</strong> Launch CRO A/B tests & optimize conversion funnel
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pipeline Kanban View -->
+        <div id="pipeline" class="view">
+            <div class="kanban-container">
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>1. PRD</span>
+                        <span class="stage-count">8</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot PRD</div>
+                        <div class="kanban-item-meta">🤖 InsightProfit</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Funded First PRD</div>
+                        <div class="kanban-item-meta">💰 Capital</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Elite Writer PRD</div>
+                        <div class="kanban-item-meta">✍️ Content</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">VidRevamp PRD</div>
+                        <div class="kanban-item-meta">🎬 Video</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics PRD</div>
+                        <div class="kanban-item-meta">▶️ Analytics</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Pilot Mastery PRD</div>
+                        <div class="kanban-item-meta">✈️ Aviation</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Family Gift PRD</div>
+                        <div class="kanban-item-meta">🎁 Products</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall PRD</div>
+                        <div class="kanban-item-meta">🔐 Monetization</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>2. Customer Avatar</span>
+                        <span class="stage-count">6</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot Avatar</div>
+                        <div class="kanban-item-meta">AI enthusiasts, developers</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Funded First Avatar</div>
+                        <div class="kanban-item-meta">Entrepreneurs seeking capital</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Elite Writer Avatar</div>
+                        <div class="kanban-item-meta">Content creators, agencies</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics Avatar</div>
+                        <div class="kanban-item-meta">Content creators, analysts</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Pilot Mastery Avatar</div>
+                        <div class="kanban-item-meta">Aspiring pilots, students</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall Avatar</div>
+                        <div class="kanban-item-meta">Content creators, publishers</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>3. Branding</span>
+                        <span class="stage-count">5</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot Brand</div>
+                        <div class="kanban-item-meta">Logo, color scheme, messaging</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Elite Writer Brand</div>
+                        <div class="kanban-item-meta">Design system, tone</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics Brand</div>
+                        <div class="kanban-item-meta">Visual identity system</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall Brand</div>
+                        <div class="kanban-item-meta">Premium positioning</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>4. GTM Strategy</span>
+                        <span class="stage-count">5</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot GTM</div>
+                        <div class="kanban-item-meta">Product launch, early access</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Elite Writer GTM</div>
+                        <div class="kanban-item-meta">Target content creators</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics GTM</div>
+                        <div class="kanban-item-meta">Creator partnerships, ads</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall GTM</div>
+                        <div class="kanban-item-meta">Content partnerships</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>5. Monetization</span>
+                        <span class="stage-count">3</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot Monetization</div>
+                        <div class="kanban-item-meta">Subscription + enterprise</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Elite Writer Monetization</div>
+                        <div class="kanban-item-meta">Tier pricing structure</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics Monetization</div>
+                        <div class="kanban-item-meta">Pro tier, enterprise licensing</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>6. Content Plan</span>
+                        <span class="stage-count">2</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">YouTube Analytics Content</div>
+                        <div class="kanban-item-meta">Weekly blog, email sequence</div>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall Content</div>
+                        <div class="kanban-item-meta">Content calendar, distribution</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>7. AI Optimization</span>
+                        <span class="stage-count">1</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">PopeBot AI</div>
+                        <div class="kanban-item-meta">Model tuning, prompt optimization</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>8. CRO & Testing</span>
+                        <span class="stage-count">1</span>
+                    </div>
+                    <div class="kanban-item">
+                        <div class="kanban-item-title">Behind Paywall CRO</div>
+                        <div class="kanban-item-meta">A/B testing, funnel optimization</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        <span>9. E-commerce</span>
+                        <span class="stage-count">0</span>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">
+                        No projects in this stage yet
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Calendar View -->
+        <div id="calendar" class="view">
+            <div class="calendar-section">
+                <div class="section-title">📅 Weekly Content Calendar</div>
+                <div class="calendar-grid">
+                    <div class="calendar-day">
+                        <div class="day-name">Monday</div>
+                        <div class="day-date">Apr 14</div>
+                        <div class="day-items">
+                            <div class="content-item">PopeBot: Newsletter drop</div>
+                            <div class="content-item">YouTube: Analytics blog post</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Tuesday</div>
+                        <div class="day-date">Apr 15</div>
+                        <div class="day-items">
+                            <div class="content-item">Elite Writer: Case study</div>
+                            <div class="content-item">Twitter thread: AI tips</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Wednesday</div>
+                        <div class="day-date">Apr 16</div>
+                        <div class="day-items">
+                            <div class="content-item">Behind Paywall: Feature update</div>
+                            <div class="content-item">Webinar: Monetization</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Thursday</div>
+                        <div class="day-date">Apr 17</div>
+                        <div class="day-items">
+                            <div class="content-item">YouTube: Video tutorial</div>
+                            <div class="content-item">Podcast: AI trends</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Friday</div>
+                        <div class="day-date">Apr 18</div>
+                        <div class="day-items">
+                            <div class="content-item">PopeBot: Demo video</div>
+                            <div class="content-item">Newsletter: Weekly recap</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Saturday</div>
+                        <div class="day-date">Apr 19</div>
+                        <div class="day-items">
+                            <div class="content-item">Community: Engagement posts</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <div class="day-name">Sunday</div>
+                        <div class="day-date">Apr 20</div>
+                        <div class="day-items">
+                            <div class="content-item">Planning: Next week prep</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools & Status View -->
+        <div id="tools" class="view">
+            <div class="tools-section">
+                <div class="section-title">🛠️ Connected Tools & Systems</div>
+                <div class="tools-grid">
+                    <div class="tool-badge">
+                        <div class="tool-name">Knowledge Base</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">Go High Level</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">Supabase</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Connected</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">PopeBot</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Live</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">Google AI Studio</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Active</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">Vercel</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Deployed</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">Claude AI</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Integrated</span>
+                        </div>
+                    </div>
+                    <div class="tool-badge">
+                        <div class="tool-name">GitHub</div>
+                        <div class="tool-status">
+                            <span class="status-dot"></span>
+                            <span>Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="alert('Feature coming soon: Add Project')">+ Add Project</button>
+            <button class="btn btn-primary" onclick="alert('Feature coming soon: Build Pipeline')">🏗️ Build Pipeline</button>
+            <button class="btn btn-secondary" onclick="alert('Feature coming soon: Sync with GHL')">🔄 Sync GHL</button>
+            <button class="btn btn-secondary" onclick="alert('Feature coming soon: Generate Content')">✨ Generate Content</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>InsightProfit Mission Control Dashboard • Last updated: April 13, 2026 • All systems operational</p>
+    </footer>
+
+    <script>
+        // Update current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            
+            document.getElementById('current-date').textContent = dateStr;
+            document.getElementById('current-time').textContent = timeStr;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 60000); // Update every minute
+
+        // Tab switching logic
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const views = document.querySelectorAll('.view');
+
+        // Load active tab from localStorage
+        const savedView = localStorage.getItem('activeView') || 'projects';
+        
+        // Initialize
+        tabButtons.forEach(btn => {
+            if (btn.dataset.view === savedView) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        views.forEach(view => {
+            if (view.id === savedView) {
+                view.classList.add('active');
+            } else {
+                view.classList.remove('active');
+            }
+        });
+
+        // Add click handlers
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const viewId = this.dataset.view;
+                
+                // Update active tab
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active view
+                views.forEach(view => view.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                
+                // Save to localStorage
+                localStorage.setItem('activeView', viewId);
+            });
+        });
+
+        // Add smooth scroll behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Simple analytics for button clicks
+        const buttons = document.querySelectorAll('.action-link, .btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (!this.href || this.href === '#') {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
