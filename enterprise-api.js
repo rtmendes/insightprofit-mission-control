@@ -1,10 +1,9 @@
-// InsightProfit Mission Control — Live Data Layer
-// Connects the dashboard to Supabase for real-time enterprise metrics
-// Add to index.html via <script src="enterprise-api.js"></script>
+// InsightProfit Mission Control — Enterprise Dashboard API v2
+// Connects to EXISTING Supabase tables for live data
+// Tables: agents, dispatch_sessions, token_usage, infra_current_status, knowledge_items
 
 const ENTERPRISE_API = {
   supabaseUrl: 'https://supabase.insightprofit.live',
-  // Anon key — safe for client-side (RLS protects data)
   supabaseKey: localStorage.getItem('supabase_anon_key') || '',
 
   headers() {
@@ -15,134 +14,126 @@ const ENTERPRISE_API = {
     };
   },
 
-  // ── Agent Fleet ──────────────────────────────────────
+  // ── Agent Fleet (15 registered agents) ───────────────
 
   async getAgents() {
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_agents?order=updated_at.desc`,
+      `${this.supabaseUrl}/rest/v1/agents?order=name`,
       { headers: this.headers() }
     );
     return res.ok ? res.json() : [];
   },
 
-  async getAgentsByStatus(status) {
+  // ── Dispatch Sessions ────────────────────────────────
+
+  async getActiveSessions() {
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_agents?status=eq.${status}`,
+      `${this.supabaseUrl}/rest/v1/dispatch_sessions?status=in.(running,pending,in_progress)&order=updated_at.desc`,
       { headers: this.headers() }
     );
     return res.ok ? res.json() : [];
   },
 
-  // ── Tasks ────────────────────────────────────────────
-
-  async getActiveTasks() {
-    const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_tasks?status=in.(queued,running)&order=created_at.desc&limit=50`,
-      { headers: this.headers() }
-    );
-    return res.ok ? res.json() : [];
-  },
-
-  async getStalledTasks() {
+  async getStalledSessions() {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_tasks?status=eq.running&started_at=lt.${oneHourAgo}`,
+      `${this.supabaseUrl}/rest/v1/dispatch_sessions?status=in.(running,pending,in_progress)&updated_at=lt.${oneHourAgo}`,
       { headers: this.headers() }
     );
     return res.ok ? res.json() : [];
   },
 
-  async getRecentTasks(limit = 20) {
+  async getRecentSessions(limit = 20) {
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_tasks?order=created_at.desc&limit=${limit}`,
+      `${this.supabaseUrl}/rest/v1/dispatch_sessions?order=updated_at.desc&limit=${limit}`,
       { headers: this.headers() }
     );
     return res.ok ? res.json() : [];
   },
 
-  // ── Metrics ──────────────────────────────────────────
-
-  async getDailyCost(date) {
-    const d = date || new Date().toISOString().split('T')[0];
+  async getSessionsByDepartment() {
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/rpc/daily_cost_summary`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify({ p_date: d }),
-      }
-    );
-    return res.ok ? res.json() : {};
-  },
-
-  async getTokenUsageByDept() {
-    const today = new Date().toISOString().split('T')[0];
-    const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_tasks?select=department,tokens_total,estimated_cost&created_at=gte.${today}T00:00:00`,
+      `${this.supabaseUrl}/rest/v1/dispatch_sessions?select=department,status`,
       { headers: this.headers() }
     );
     if (!res.ok) return {};
-    const tasks = await res.json();
+    const sessions = await res.json();
     const byDept = {};
-    for (const t of tasks) {
-      const dept = t.department || 'Unknown';
-      if (!byDept[dept]) byDept[dept] = { tokens: 0, cost: 0, tasks: 0 };
-      byDept[dept].tokens += t.tokens_total || 0;
-      byDept[dept].cost += parseFloat(t.estimated_cost) || 0;
-      byDept[dept].tasks += 1;
+    for (const s of sessions) {
+      const d = s.department || 'Unassigned';
+      if (!byDept[d]) byDept[d] = { total: 0, completed: 0, running: 0, failed: 0 };
+      byDept[d].total++;
+      byDept[d][s.status] = (byDept[d][s.status] || 0) + 1;
     }
     return byDept;
   },
 
-  // ── Knowledge Base ───────────────────────────────────
+  // ── Token Usage ──────────────────────────────────────
 
-  async searchKB(query) {
+  async getTodayTokens() {
+    const today = new Date().toISOString().split('T')[0];
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/rpc/search_knowledge`,
-      {
-        method: 'POST',
-        headers: this.headers(),
-        body: JSON.stringify({ query, max_results: 10 }),
-      }
+      `${this.supabaseUrl}/rest/v1/token_usage?created_at=gte.${today}T00:00:00`,
+      { headers: this.headers() }
+    );
+    if (!res.ok) return { total: 0, cost: 0, calls: 0, byModel: {} };
+    const rows = await res.json();
+    const byModel = {};
+    for (const r of rows) {
+      const m = r.model || 'unknown';
+      if (!byModel[m]) byModel[m] = { tokens: 0, cost: 0, calls: 0 };
+      byModel[m].tokens += (r.input_tokens || 0) + (r.output_tokens || 0);
+      byModel[m].cost += parseFloat(r.estimated_cost_usd || 0);
+      byModel[m].calls += 1;
+    }
+    return {
+      total: rows.reduce((s, r) => s + (r.input_tokens || 0) + (r.output_tokens || 0), 0),
+      cost: rows.reduce((s, r) => s + parseFloat(r.estimated_cost_usd || 0), 0),
+      calls: rows.length,
+      byModel,
+    };
+  },
+
+  // ── Infrastructure Health ────────────────────────────
+
+  async getInfraStatus() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/infra_current_status?order=service`,
+      { headers: this.headers() }
     );
     return res.ok ? res.json() : [];
   },
+
+  // ── Knowledge Base Stats ─────────────────────────────
 
   async getKBStats() {
     const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_knowledge?select=category`,
+      `${this.supabaseUrl}/rest/v1/knowledge_items?select=item_type&status=eq.active`,
       { headers: this.headers() }
     );
-    if (!res.ok) return {};
-    const entries = await res.json();
-    const byCategory = {};
-    for (const e of entries) {
-      byCategory[e.category] = (byCategory[e.category] || 0) + 1;
+    if (!res.ok) return { total: 0, byType: {} };
+    const items = await res.json();
+    const byType = {};
+    for (const i of items) {
+      byType[i.item_type] = (byType[i.item_type] || 0) + 1;
     }
-    return { total: entries.length, byCategory };
+    return { total: items.length, byType };
   },
 
-  // ── Integration Health ───────────────────────────────
-
-  async getIntegrations() {
-    const res = await fetch(
-      `${this.supabaseUrl}/rest/v1/enterprise_integrations?order=name`,
-      { headers: this.headers() }
-    );
-    return res.ok ? res.json() : [];
-  },
-
-  // ── Dashboard Refresh ────────────────────────────────
+  // ── Full Dashboard Refresh ───────────────────────────
 
   async refreshAll() {
-    const [agents, activeTasks, stalledTasks, cost, integrations] = await Promise.all([
+    const [agents, activeSessions, stalledSessions, recentSessions, deptStats, tokens, infra, kb] = await Promise.all([
       this.getAgents(),
-      this.getActiveTasks(),
-      this.getStalledTasks(),
-      this.getDailyCost(),
-      this.getIntegrations(),
+      this.getActiveSessions(),
+      this.getStalledSessions(),
+      this.getRecentSessions(),
+      this.getSessionsByDepartment(),
+      this.getTodayTokens(),
+      this.getInfraStatus(),
+      this.getKBStats(),
     ]);
-    return { agents, activeTasks, stalledTasks, cost, integrations };
+    return { agents, activeSessions, stalledSessions, recentSessions, deptStats, tokens, infra, kb };
   },
 
   // ── Config ───────────────────────────────────────────
@@ -153,8 +144,15 @@ const ENTERPRISE_API = {
   },
 };
 
-// Auto-refresh every 30 seconds if dashboard is open
+// Auto-refresh loop
 if (typeof window !== 'undefined') {
   window.ENTERPRISE_API = ENTERPRISE_API;
-  console.log('[Mission Control] Enterprise API loaded. Call ENTERPRISE_API.configure("your-anon-key") to connect.');
+  setInterval(async () => {
+    if (window._enterpriseDashboardActive) {
+      const data = await ENTERPRISE_API.refreshAll();
+      if (window._onEnterpriseRefresh) window._onEnterpriseRefresh(data);
+    }
+  }, 30000);
+  console.log('[Mission Control] Enterprise API v2 loaded. Using existing Supabase tables.');
+  console.log('  agents: 15 registered | knowledge_items: 11,590 entries | token_usage: live tracking');
 }
