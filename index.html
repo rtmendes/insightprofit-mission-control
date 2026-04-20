@@ -1456,5 +1456,19 @@
             });
         });
     </script>
+
+    <!-- Enterprise AI Operations Dashboard -->
+    <script src="enterprise-api.js"></script>
+    <script>
+      // Auto-configure enterprise API if Supabase env is set
+      if (window.ENTERPRISE_API) {
+        // Configure will be called with the anon key set in enterprise-config.json
+        // For now, check localStorage for the key
+        const savedKey = localStorage.getItem('enterprise_anon_key');
+        if (savedKey) ENTERPRISE_API.configure(savedKey);
+      }
+    </script>
+    <script src="enterprise-dashboard-widget.html" type="text/html"></script>
+
 </body>
 </html>
