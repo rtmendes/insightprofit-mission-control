@@ -1,0 +1,166 @@
+<!-- InsightProfit Mission Control — Enterprise Dashboard Widget -->
+<!-- Add this before </body> in index.html -->
+<script src="enterprise-api.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // Only activate if ENTERPRISE_API is loaded
+  if (!window.ENTERPRISE_API) return;
+
+  // Create enterprise dashboard overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'enterprise-overlay';
+  overlay.innerHTML = `
+    <style>
+      #enterprise-overlay {
+        position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+        font-family: 'Inter', -apple-system, sans-serif;
+      }
+      #enterprise-toggle {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border: none; color: white; font-size: 24px; cursor: pointer;
+        box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+        transition: transform 0.2s;
+      }
+      #enterprise-toggle:hover { transform: scale(1.1); }
+      #enterprise-panel {
+        display: none; position: absolute; bottom: 70px; right: 0;
+        width: 480px; max-height: 600px; overflow-y: auto;
+        background: #0f0f23; border: 1px solid #1e1e3f;
+        border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        padding: 20px;
+      }
+      #enterprise-panel.open { display: block; }
+      .ep-header { font-size: 18px; font-weight: 700; color: #e2e8f0; margin-bottom: 16px; }
+      .ep-section { margin-bottom: 16px; }
+      .ep-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }
+      .ep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .ep-card {
+        background: #1a1a2e; border-radius: 8px; padding: 12px;
+        border: 1px solid #2d2d4f;
+      }
+      .ep-card-value { font-size: 24px; font-weight: 700; color: #e2e8f0; }
+      .ep-card-label { font-size: 11px; color: #94a3b8; }
+      .ep-status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+      .ep-status-dot.healthy { background: #22c55e; }
+      .ep-status-dot.degraded { background: #eab308; }
+      .ep-status-dot.down { background: #ef4444; }
+      .ep-agent-row { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #1e1e3f; font-size: 13px; color: #cbd5e1; }
+      .ep-agent-status { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 12px; }
+      .ep-agent-status.active { background: #064e3b; color: #34d399; }
+      .ep-agent-status.idle { background: #1e1b4b; color: #818cf8; }
+      .ep-agent-status.error { background: #450a0a; color: #fca5a5; }
+      .ep-loading { color: #64748b; font-style: italic; }
+    </style>
+    <div id="enterprise-panel">
+      <div class="ep-header">🏢 Enterprise AI Operations</div>
+      <div id="ep-content"><span class="ep-loading">Loading...</span></div>
+    </div>
+    <button id="enterprise-toggle" title="Enterprise Dashboard">⚡</button>
+  `;
+  document.body.appendChild(overlay);
+
+  const toggle = document.getElementById('enterprise-toggle');
+  const panel = document.getElementById('enterprise-panel');
+  const content = document.getElementById('ep-content');
+
+  toggle.addEventListener('click', async () => {
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      await refreshDashboard();
+    }
+  });
+
+  async function refreshDashboard() {
+    if (!ENTERPRISE_API.supabaseKey) {
+      content.innerHTML = '<p style="color:#ef4444">Configure API key first:<br><code>ENTERPRISE_API.configure("your-anon-key")</code></p>';
+      return;
+    }
+
+    content.innerHTML = '<span class="ep-loading">Refreshing...</span>';
+
+    try {
+      const data = await ENTERPRISE_API.refreshAll();
+
+      const activeAgents = data.agents.filter(a => a.status === 'active').length;
+      const stalledCount = data.stalledSessions?.length || 0;
+
+      content.innerHTML = `
+        <div class="ep-section">
+          <div class="ep-grid">
+            <div class="ep-card">
+              <div class="ep-card-value">${data.agents.length}</div>
+              <div class="ep-card-label">Agents (${activeAgents} active)</div>
+            </div>
+            <div class="ep-card">
+              <div class="ep-card-value">${data.activeSessions?.length || 0}</div>
+              <div class="ep-card-label">Active Tasks</div>
+            </div>
+            <div class="ep-card">
+              <div class="ep-card-value">$${(data.tokens?.cost || 0).toFixed(2)}</div>
+              <div class="ep-card-label">Today's Cost</div>
+            </div>
+            <div class="ep-card">
+              <div class="ep-card-value">${((data.tokens?.total || 0) / 1000).toFixed(0)}K</div>
+              <div class="ep-card-label">Tokens Today</div>
+            </div>
+          </div>
+        </div>
+
+        ${stalledCount > 0 ? `
+        <div class="ep-section">
+          <div class="ep-label" style="color:#ef4444">⚠️ ${stalledCount} Stalled Task${stalledCount > 1 ? 's' : ''}</div>
+          ${data.stalledSessions.slice(0, 3).map(s => `
+            <div class="ep-agent-row">
+              ${s.title?.slice(0, 40) || s.id}
+              <span class="ep-agent-status error">${s.department || 'Unknown'}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
+
+        <div class="ep-section">
+          <div class="ep-label">Infrastructure</div>
+          ${(data.infra || []).map(i => `
+            <div class="ep-agent-row">
+              <span class="ep-status-dot ${i.status}"></span>
+              ${i.service} <small style="color:#64748b;margin-left:8px">${i.response_time_ms}ms</small>
+              <span class="ep-agent-status ${i.status}">${i.status}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-label">Agent Fleet</div>
+          ${data.agents.slice(0, 10).map(a => `
+            <div class="ep-agent-row">
+              ${a.name}
+              <span class="ep-agent-status ${a.status}">${a.status}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="ep-section">
+          <div class="ep-label">Knowledge Base</div>
+          <div class="ep-card">
+            <div class="ep-card-value">${(data.kb?.total || 0).toLocaleString()}</div>
+            <div class="ep-card-label">Total KB Entries</div>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:12px">
+          <small style="color:#475569">Last refresh: ${new Date().toLocaleTimeString()}</small>
+        </div>
+      `;
+    } catch (err) {
+      content.innerHTML = `<p style="color:#ef4444">Error: ${err.message}</p>`;
+    }
+  }
+
+  // Auto-refresh every 30s when panel is open
+  setInterval(() => {
+    if (panel.classList.contains('open')) refreshDashboard();
+  }, 30000);
+})();
+</script>
