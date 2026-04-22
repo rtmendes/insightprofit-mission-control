@@ -1,6 +1,6 @@
-// InsightProfit Mission Control — Enterprise Dashboard API v2
-// Connects to EXISTING Supabase tables for live data
-// Tables: agents, dispatch_sessions, token_usage, infra_current_status, knowledge_items
+// InsightProfit Mission Control — Enterprise Dashboard API v3
+// ETL-powered analytics from Supabase
+// Pipelines: ClickUp sync (15min), Agent metrics (1h), KB analytics (daily), Infra metrics (1h), Revenue (6h)
 
 const ENTERPRISE_API = {
   supabaseUrl: 'https://supabase.insightprofit.live',
@@ -14,8 +14,18 @@ const ENTERPRISE_API = {
     };
   },
 
-  // ── Agent Fleet (15 registered agents) ───────────────
+  // ── Dashboard KPIs (single RPC call) ─────────────────
+  async getKPIs() {
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/get_dashboard_kpis`,
+        { method: 'POST', headers: this.headers(), body: '{}' }
+      );
+      return res.ok ? res.json() : {};
+    } catch(e) { return {}; }
+  },
 
+  // ── Agent Fleet ──────────────────────────────────────
   async getAgents() {
     const res = await fetch(
       `${this.supabaseUrl}/rest/v1/agents?order=name`,
@@ -24,8 +34,25 @@ const ENTERPRISE_API = {
     return res.ok ? res.json() : [];
   },
 
-  // ── Dispatch Sessions ────────────────────────────────
+  async getAgentPerformance() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_agent_performance?order=today_executions.desc`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
 
+  async getAgentSummary() {
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/get_agent_summary`,
+        { method: 'POST', headers: this.headers(), body: '{}' }
+      );
+      return res.ok ? res.json() : [];
+    } catch(e) { return []; }
+  },
+
+  // ── Dispatch Sessions ────────────────────────────────
   async getActiveSessions() {
     const res = await fetch(
       `${this.supabaseUrl}/rest/v1/dispatch_sessions?status=in.(running,pending,in_progress)&order=updated_at.desc`,
@@ -68,8 +95,7 @@ const ENTERPRISE_API = {
     return byDept;
   },
 
-  // ── Token Usage ──────────────────────────────────────
-
+  // ── Token Usage & Cost Trends ────────────────────────
   async getTodayTokens() {
     const today = new Date().toISOString().split('T')[0];
     const res = await fetch(
@@ -94,8 +120,17 @@ const ENTERPRISE_API = {
     };
   },
 
-  // ── Infrastructure Health ────────────────────────────
+  async getCostTrends(days = 7) {
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/get_cost_trends`,
+        { method: 'POST', headers: this.headers(), body: JSON.stringify({ days }) }
+      );
+      return res.ok ? res.json() : [];
+    } catch(e) { return []; }
+  },
 
+  // ── Infrastructure Health ────────────────────────────
   async getInfraStatus() {
     const res = await fetch(
       `${this.supabaseUrl}/rest/v1/infra_current_status?order=service`,
@@ -104,8 +139,68 @@ const ENTERPRISE_API = {
     return res.ok ? res.json() : [];
   },
 
-  // ── Knowledge Base Stats ─────────────────────────────
+  async getInfraHealth() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_infra_health`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
 
+  async getInfraMetrics() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/infra_metrics?order=metric_date.desc&limit=7`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // ── Project Velocity (ClickUp) ───────────────────────
+  async getProjectVelocity() {
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/get_project_velocity`,
+        { method: 'POST', headers: this.headers(), body: '{}' }
+      );
+      return res.ok ? res.json() : [];
+    } catch(e) { return []; }
+  },
+
+  async getProjectHealth() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_project_health`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  async getClickUpTasks(limit = 50) {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/clickup_tasks?order=updated_at.desc&limit=${limit}`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // ── Revenue Analytics ────────────────────────────────
+  async getRevenueOverview() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_revenue_overview`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  async getRevenueAnalytics(days = 30) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/revenue_analytics?period_date=gte.${since}&order=period_date.desc`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // ── Knowledge Base Stats ─────────────────────────────
   async getKBStats() {
     const res = await fetch(
       `${this.supabaseUrl}/rest/v1/knowledge_items?select=item_type&status=eq.active`,
@@ -120,31 +215,82 @@ const ENTERPRISE_API = {
     return { total: items.length, byType };
   },
 
-  // ── Full Dashboard Refresh ───────────────────────────
+  async getKBAnalytics() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_kb_coverage`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
 
+  // ── ETL Pipeline Status ──────────────────────────────
+  async getETLStatus() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/etl_runs?order=started_at.desc&limit=20`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // ── Daily Operations Summary ─────────────────────────
+  async getDailySummary() {
+    const res = await fetch(
+      `${this.supabaseUrl}/rest/v1/v_daily_ops_summary`,
+      { headers: this.headers() }
+    );
+    return res.ok ? res.json() : [];
+  },
+
+  // ── Full Dashboard Refresh ───────────────────────────
   async refreshAll() {
-    const [agents, activeSessions, stalledSessions, recentSessions, deptStats, tokens, infra, kb] = await Promise.all([
+    const [kpis, agents, agentPerf, activeSessions, stalledSessions, recentSessions, deptStats, tokens, costTrends, infra, infraMetrics, projects, revenue, kb, kbAnalytics, etlStatus] = await Promise.allSettled([
+      this.getKPIs(),
       this.getAgents(),
+      this.getAgentPerformance(),
       this.getActiveSessions(),
       this.getStalledSessions(),
       this.getRecentSessions(),
       this.getSessionsByDepartment(),
       this.getTodayTokens(),
-      this.getInfraStatus(),
+      this.getCostTrends(),
+      this.getInfraHealth(),
+      this.getInfraMetrics(),
+      this.getProjectVelocity(),
+      this.getRevenueOverview(),
       this.getKBStats(),
+      this.getKBAnalytics(),
+      this.getETLStatus(),
     ]);
-    return { agents, activeSessions, stalledSessions, recentSessions, deptStats, tokens, infra, kb };
+
+    const v = (p) => p.status === 'fulfilled' ? p.value : (p.status === 'fulfilled' ? p.value : null);
+    return {
+      kpis: v(kpis),
+      agents: v(agents),
+      agentPerformance: v(agentPerf),
+      activeSessions: v(activeSessions),
+      stalledSessions: v(stalledSessions),
+      recentSessions: v(recentSessions),
+      deptStats: v(deptStats),
+      tokens: v(tokens),
+      costTrends: v(costTrends),
+      infra: v(infra),
+      infraMetrics: v(infraMetrics),
+      projects: v(projects),
+      revenue: v(revenue),
+      kb: v(kb),
+      kbAnalytics: v(kbAnalytics),
+      etlStatus: v(etlStatus),
+    };
   },
 
   // ── Config ───────────────────────────────────────────
-
   configure(anonKey) {
     this.supabaseKey = anonKey;
     localStorage.setItem('supabase_anon_key', anonKey);
   },
 };
 
-// Auto-refresh loop
+// Auto-refresh loop (every 30s)
 if (typeof window !== 'undefined') {
   window.ENTERPRISE_API = ENTERPRISE_API;
   setInterval(async () => {
@@ -153,6 +299,6 @@ if (typeof window !== 'undefined') {
       if (window._onEnterpriseRefresh) window._onEnterpriseRefresh(data);
     }
   }, 30000);
-  console.log('[Mission Control] Enterprise API v2 loaded. Using existing Supabase tables.');
-  console.log('  agents: 15 registered | knowledge_items: 11,590 entries | token_usage: live tracking');
+  console.log('[Mission Control] Enterprise API v3 loaded — ETL-powered analytics.');
+  console.log('  Pipelines: ClickUp (15min) | Agent metrics (1h) | Infra (1h) | KB (daily) | Revenue (6h)');
 }
