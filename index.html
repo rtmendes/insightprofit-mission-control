@@ -803,6 +803,7 @@
             <button class="tab-button" data-view="pipeline">Pipeline Kanban</button>
             <button class="tab-button" data-view="calendar">Content Calendar</button>
             <button class="tab-button" data-view="tools">Tools & Status</button>
+            <button class="tab-button" data-view="router" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white;">⚡ Instruction Router</button>
         </div>
 
         <!-- Projects Grid View -->
@@ -1373,6 +1374,99 @@
             </div>
         </div>
 
+        <!-- Instruction Router View -->
+        <div id="router" class="view">
+            <div class="router-container" style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+                
+                <!-- Router Input Section -->
+                <div class="router-input-section" style="background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 48px; height: 48px; background: var(--gradient-purple); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚡</div>
+                        <div>
+                            <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0;">Instruction Router</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Type any instruction — AI classifies it and routes to the best agent</p>
+                        </div>
+                    </div>
+
+                    <div style="position: relative;">
+                        <textarea id="router-instruction" rows="3" placeholder="e.g. 'Build a landing page for FGS Mother's Day campaign' or 'Research competitor pricing for PopeBot' or 'Fix the broken CRM sync webhook'..." 
+                            style="width: 100%; background: var(--navy); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem; resize: vertical; outline: none; transition: border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <select id="router-source" style="background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: var(--text-secondary); font-size: 0.85rem; outline: none;">
+                                    <option value="command_center">📊 Command Center</option>
+                                    <option value="slack">💬 Slack</option>
+                                    <option value="api">🔌 API</option>
+                                    <option value="n8n">⚙️ n8n Workflow</option>
+                                </select>
+                                <select id="router-priority" style="background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: var(--text-secondary); font-size: 0.85rem; outline: none;">
+                                    <option value="auto">🎯 Auto Priority</option>
+                                    <option value="urgent">🔴 Urgent</option>
+                                    <option value="high">🟠 High</option>
+                                    <option value="normal">🟢 Normal</option>
+                                    <option value="low">⚪ Low</option>
+                                </select>
+                            </div>
+                            <button id="router-submit-btn" onclick="routeInstruction()" style="background: var(--gradient-purple); color: white; border: none; border-radius: 10px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s, opacity 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+                                <span id="router-btn-text">⚡ Route Instruction</span>
+                                <span id="router-spinner" style="display: none;">⏳</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Routing Result (appears after routing) -->
+                <div id="router-result" style="display: none; margin-bottom: 2rem;"></div>
+
+                <!-- Recent Routings -->
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">📋 Recent Instructions</h3>
+                        <button onclick="loadRoutingHistory()" style="background: var(--navy-lighter); border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 1rem; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer;">🔄 Refresh</button>
+                    </div>
+                    <div id="router-history" style="display: grid; gap: 0.75rem;">
+                        <div style="text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+                            <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚡</p>
+                            <p>No instructions routed yet. Type one above to get started.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div id="router-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                </div>
+
+                <!-- Settings Panel (collapsed) -->
+                <details style="background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem;">
+                    <summary style="cursor: pointer; font-weight: 600; color: var(--text-primary); font-size: 0.95rem; list-style: none; display: flex; align-items: center; gap: 0.5rem;">
+                        ⚙️ Router Settings
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400;">— API keys & webhook URLs</span>
+                    </summary>
+                    <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+                        <div>
+                            <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Anthropic API Key (for classification)</label>
+                            <input id="router-anthropic-key" type="password" placeholder="sk-ant-..." 
+                                style="width: 100%; background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; color: var(--text-primary); font-family: monospace; font-size: 0.85rem; outline: none;"
+                                oninput="localStorage.setItem('router_anthropic_key', this.value)">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">n8n Webhook URL (for dispatch execution)</label>
+                            <input id="router-n8n-webhook" type="url" placeholder="https://n8n.insightprofit.live/webhook/..." 
+                                style="width: 100%; background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; color: var(--text-primary); font-family: monospace; font-size: 0.85rem; outline: none;"
+                                oninput="localStorage.setItem('router_n8n_webhook', this.value)">
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button onclick="testRouterConnection()" style="background: var(--navy); border: 1px solid var(--green); border-radius: 8px; padding: 0.5rem 1rem; color: var(--green); font-size: 0.85rem; cursor: pointer;">✅ Test Connection</button>
+                            <button onclick="clearRouterSettings()" style="background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer;">🗑️ Clear Settings</button>
+                        </div>
+                        <p id="router-connection-status" style="font-size: 0.8rem; color: var(--text-secondary);"></p>
+                    </div>
+                </details>
+            </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="alert('Feature coming soon: Add Project')">+ Add Project</button>
@@ -1469,6 +1563,269 @@
       }
     </script>
     <script src="enterprise-dashboard-widget.html" type="text/html"></script>
+
+    <!-- Instruction Router Logic -->
+    <script>
+      // ── Router Settings ───────────────────────────────────────────
+      (function initRouter() {
+        const keyEl = document.getElementById('router-anthropic-key');
+        const webhookEl = document.getElementById('router-n8n-webhook');
+        if (keyEl) keyEl.value = localStorage.getItem('router_anthropic_key') || '';
+        if (webhookEl) webhookEl.value = localStorage.getItem('router_n8n_webhook') || '';
+        // Auto-load history when router tab is shown
+        const routerTab = document.querySelector('[data-view="router"]');
+        if (routerTab) {
+          routerTab.addEventListener('click', () => setTimeout(loadRoutingHistory, 200));
+        }
+      })();
+
+      function clearRouterSettings() {
+        localStorage.removeItem('router_anthropic_key');
+        localStorage.removeItem('router_n8n_webhook');
+        document.getElementById('router-anthropic-key').value = '';
+        document.getElementById('router-n8n-webhook').value = '';
+        document.getElementById('router-connection-status').textContent = 'Settings cleared.';
+      }
+
+      async function testRouterConnection() {
+        const statusEl = document.getElementById('router-connection-status');
+        statusEl.textContent = 'Testing...';
+        statusEl.style.color = 'var(--gold)';
+        
+        const key = document.getElementById('router-anthropic-key').value;
+        if (!key) {
+          statusEl.textContent = '❌ No Anthropic key configured';
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-haiku-4-5-20250415', max_tokens: 10, messages: [{ role: 'user', content: 'Say OK' }] }),
+          });
+          if (res.ok) {
+            statusEl.textContent = '✅ Anthropic API connected! Classification engine ready.';
+            statusEl.style.color = 'var(--green)';
+          } else {
+            statusEl.textContent = `❌ Anthropic API error: ${res.status}`;
+            statusEl.style.color = 'var(--red)';
+          }
+        } catch (e) {
+          statusEl.textContent = `❌ Connection failed: ${e.message}`;
+          statusEl.style.color = 'var(--red)';
+        }
+      }
+
+      // ── Route Instruction ─────────────────────────────────────────
+      async function routeInstruction() {
+        const instruction = document.getElementById('router-instruction').value.trim();
+        if (!instruction) return alert('Please type an instruction first.');
+
+        const key = document.getElementById('router-anthropic-key').value || localStorage.getItem('router_anthropic_key');
+        if (!key) {
+          alert('Please set your Anthropic API key in Router Settings first.');
+          return;
+        }
+
+        const btn = document.getElementById('router-submit-btn');
+        const btnText = document.getElementById('router-btn-text');
+        const spinner = document.getElementById('router-spinner');
+
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btnText.textContent = 'Routing...';
+        spinner.style.display = 'inline';
+
+        const source = document.getElementById('router-source').value;
+        const priorityOverride = document.getElementById('router-priority').value;
+        const webhook = document.getElementById('router-n8n-webhook').value || localStorage.getItem('router_n8n_webhook');
+
+        try {
+          const res = await fetch('/api/route-instruction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              instruction,
+              source,
+              anthropic_key: key,
+              n8n_webhook_url: webhook || undefined,
+              priority_override: priorityOverride !== 'auto' ? priorityOverride : undefined,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Routing failed');
+
+          showRoutingResult(data);
+          document.getElementById('router-instruction').value = '';
+          loadRoutingHistory();
+        } catch (err) {
+          showRoutingError(err.message);
+        } finally {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btnText.textContent = '⚡ Route Instruction';
+          spinner.style.display = 'none';
+        }
+      }
+
+      // Allow Ctrl+Enter to submit
+      document.getElementById('router-instruction')?.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') routeInstruction();
+      });
+
+      // ── Display Results ───────────────────────────────────────────
+      function showRoutingResult(data) {
+        const el = document.getElementById('router-result');
+        const cls = data.classification;
+        const agents = data.matched_agents || [];
+        const primary = agents[0];
+
+        const priorityColors = { urgent: '#ef4444', high: '#f59e0b', normal: '#10b981', low: '#6b7280' };
+        const pColor = priorityColors[cls.priority] || '#10b981';
+
+        el.style.display = 'block';
+        el.innerHTML = `
+          <div style="background: linear-gradient(135deg, var(--navy-light) 0%, rgba(124,58,237,0.1) 100%); border: 1px solid var(--purple); border-radius: 16px; padding: 2rem; animation: fadeIn 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+              <div>
+                <h3 style="color: var(--purple-light); font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">✅ Instruction Routed Successfully</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">${cls.summary}</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <span style="background: rgba(124,58,237,0.2); color: var(--purple-light); padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${cls.type}</span>
+                <span style="background: ${pColor}20; color: ${pColor}; padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">${cls.priority}</span>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: var(--navy); border-radius: 10px; padding: 1rem;">
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">DEPARTMENT</div>
+                <div style="font-size: 0.95rem; color: var(--text-primary); font-weight: 600;">${cls.department}</div>
+              </div>
+              <div style="background: var(--navy); border-radius: 10px; padding: 1rem;">
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">PRIMARY AGENT</div>
+                <div style="font-size: 0.95rem; color: var(--gold); font-weight: 600;">${primary ? primary.name : 'No match'}</div>
+                ${primary ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Confidence: ${Math.round(primary.confidence * 100)}% • ${primary.platform || 'N/A'}</div>` : ''}
+              </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; text-transform: uppercase;">MATCHED AGENTS (Top ${agents.length})</div>
+              <div style="display: grid; gap: 0.5rem;">
+                ${agents.map((a, i) => `
+                  <div style="display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-radius: 8px; padding: 0.6rem 1rem; border-left: 3px solid ${i === 0 ? 'var(--purple)' : 'var(--border)'};">
+                    <div>
+                      <span style="color: ${i === 0 ? 'var(--purple-light)' : 'var(--text-primary)'}; font-weight: ${i === 0 ? '600' : '400'}; font-size: 0.9rem;">${a.name}</span>
+                      <span style="color: var(--text-secondary); font-size: 0.75rem; margin-left: 0.5rem;">${a.role_type} • ${a.category}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div style="width: ${Math.max(a.confidence * 100, 10)}px; height: 4px; background: ${i === 0 ? 'var(--purple)' : 'var(--border)'}; border-radius: 2px;"></div>
+                      <span style="color: var(--text-secondary); font-size: 0.75rem; min-width: 35px; text-align: right;">${Math.round(a.confidence * 100)}%</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            ${cls.keywords ? `
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                ${cls.keywords.map(kw => `<span style="background: rgba(124,58,237,0.15); color: var(--purple-light); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem;">${kw}</span>`).join('')}
+              </div>
+            ` : ''}
+
+            ${data.n8n_triggered ? '<p style="color: var(--green); font-size: 0.85rem; margin-top: 1rem;">✅ n8n workflow triggered for dispatch</p>' : ''}
+          </div>
+          <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }</style>
+        `;
+
+        // Scroll to result
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function showRoutingError(message) {
+        const el = document.getElementById('router-result');
+        el.style.display = 'block';
+        el.innerHTML = `
+          <div style="background: rgba(239,68,68,0.1); border: 1px solid var(--red); border-radius: 12px; padding: 1.5rem;">
+            <h3 style="color: var(--red); font-size: 1rem; margin: 0 0 0.5rem 0;">❌ Routing Failed</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">${message}</p>
+          </div>
+        `;
+      }
+
+      // ── History ───────────────────────────────────────────────────
+      async function loadRoutingHistory() {
+        const historyEl = document.getElementById('router-history');
+        const statsEl = document.getElementById('router-stats');
+
+        try {
+          const res = await fetch('/api/routing-history?limit=15');
+          if (!res.ok) throw new Error('Failed to load history');
+          const { records, stats } = await res.json();
+
+          // Render stats
+          if (stats.total > 0) {
+            statsEl.innerHTML = `
+              <div class="kpi-card">
+                <div class="kpi-label">Total Routed</div>
+                <div class="kpi-value" style="font-size: 1.8rem;">${stats.total}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Completed</div>
+                <div class="kpi-value" style="font-size: 1.8rem; background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; background-clip: text;">${stats.byStatus.completed || 0}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">In Progress</div>
+                <div class="kpi-value" style="font-size: 1.8rem; background: var(--gradient-gold); -webkit-background-clip: text; background-clip: text;">${(stats.byStatus.routed || 0) + (stats.byStatus.dispatched || 0)}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Top Type</div>
+                <div class="kpi-value" style="font-size: 1.4rem;">${Object.entries(stats.byType).sort((a,b) => b[1]-a[1])[0]?.[0] || '—'}</div>
+              </div>
+            `;
+          }
+
+          // Render history
+          if (records.length === 0) {
+            historyEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 3rem 0;"><p style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚡</p><p>No instructions routed yet.</p></div>';
+            return;
+          }
+
+          const statusIcons = { pending: '⏳', routed: '🔄', dispatched: '📤', completed: '✅', failed: '❌' };
+          const priorityColors = { urgent: '#ef4444', high: '#f59e0b', normal: '#10b981', low: '#6b7280' };
+
+          historyEl.innerHTML = records.map(r => {
+            const agents = (typeof r.matched_agents === 'string' ? JSON.parse(r.matched_agents) : r.matched_agents) || [];
+            const time = new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            return `
+              <div style="background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-lighter) 100%); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="flex: 1; min-width: 200px;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                    <span>${statusIcons[r.status] || '❓'}</span>
+                    <span style="font-size: 0.9rem; color: var(--text-primary); font-weight: 500;">${r.instruction.length > 80 ? r.instruction.substring(0, 80) + '...' : r.instruction}</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <span style="background: rgba(124,58,237,0.15); color: var(--purple-light); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">${r.instruction_type || '?'}</span>
+                    <span style="background: ${(priorityColors[r.priority] || '#6b7280')}20; color: ${priorityColors[r.priority] || '#6b7280'}; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">${r.priority || 'normal'}</span>
+                    <span style="color: var(--text-secondary); font-size: 0.75rem;">→ ${r.primary_agent_name || 'Unmatched'}</span>
+                  </div>
+                </div>
+                <div style="text-align: right; min-width: 100px;">
+                  <div style="font-size: 0.75rem; color: var(--text-secondary);">${time}</div>
+                  ${r.routing_confidence ? `<div style="font-size: 0.7rem; color: var(--purple-light);">${Math.round(r.routing_confidence * 100)}% confidence</div>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+
+        } catch (e) {
+          historyEl.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Could not load history. Route your first instruction to get started.</p>`;
+        }
+      }
+    </script>
 
 </body>
 </html>
