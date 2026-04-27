@@ -298,7 +298,7 @@ if (typeof window !== 'undefined') {
       const data = await ENTERPRISE_API.refreshAll();
       if (window._onEnterpriseRefresh) window._onEnterpriseRefresh(data);
     }
-  }, 30000);
+  }, 120000);
   console.log('[Mission Control] Enterprise API v3 loaded — ETL-powered analytics.');
   console.log('  Pipelines: ClickUp (15min) | Agent metrics (1h) | Infra (1h) | KB (daily) | Revenue (6h)');
 }
